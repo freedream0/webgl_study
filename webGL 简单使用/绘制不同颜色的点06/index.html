@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="../lib/index.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    canvas {
+      margin: 50px auto 0;
+      display: block;
+      background: yellow;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="canvas" width="400" height="400">
+    此浏览器不支持canvas
+  </canvas>
+</body>
+<script>
+  const ctx = document.getElementById('canvas')
+  const gl = ctx.getContext('webgl')
+
+  // 创建着色器源码
+  const VERTEX_SHADER_SOURCE = `
+    // 只传递顶点数据
+    attribute vec4 aPosition;
+    void main(){
+      gl_Position = aPosition; // vec4(0.0,0.0,0.0,1.0);
+      gl_PointSize = 30.0;
+    }
+  `; // 顶点着色器
+
+  const FRAGMENT_SHADER_SOURCE = `
+    precision mediump float; // highp lowp 高精度 低精度  顶点着色器有默认精度所以不需要指定，而片元着色器没有默认，需要指定
+    uniform vec2 uColor;  // vec4 uColor   uniform float uColor (只有一个声明比较特殊)  ps: 与attribue 不同 uniform 既可以用在顶点着色器也可以用在片元着色器
+    void main(){
+      gl_FragColor = vec4(uColor.r,uColor.g,0.0,1.0);   // vec4(1.0,0.0,1.0,1.0);  vec4(uColor.r,uColor.g,0.0,1.0)  vec4(uColor,0.0,0.0,1.0)/只有一个的时候赋值也比较特殊
+    }
+  `; // 片元着色器
+
+  const program = initShader(gl, VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE)
+
+  const aPosition = gl.getAttribLocation(program, 'aPosition');
+
+  const uColor = gl.getUniformLocation(program, 'uColor');
+
+  // onclick onmousemove
+  const points = []
+  ctx.onmousemove = function (ev) {
+    // 坐标
+    const x = ev.clientX
+    const y = ev.clientY
+
+    const domPosition = ev.target.getBoundingClientRect();
+    console.log(domPosition, ctx.offsetTop, ctx.offsetLeft)
+
+    const domx = x - domPosition.left;
+    const domy = y - domPosition.top;
+
+    const halfWidth = ctx.offsetWidth / 2
+    const halfHeight = ctx.offsetHeight / 2
+
+    const clickX = (domx - halfWidth) / halfWidth
+    const clickY = (halfHeight - domy) / halfHeight
+
+    points.push({
+      clickX, clickY
+    })
+
+    for (let i = 0; i < points.length; i++) {
+      gl.vertexAttrib2f(aPosition, points[i].clickX, points[i].clickY)
+      gl.uniform2f(uColor, points[i].clickX, points[i].clickY)  // gl.uniform1f(uColor,1.0)
+      gl.drawArrays(gl.POINTS, 0, 1);
+    }
+  }
+
+
+</script>
+
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="../lib/index.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    canvas {
+      margin: 50px auto 0;
+      display: block;
+      background: yellow;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="canvas" width="400" height="400">
+    此浏览器不支持canvas
+  </canvas>
+</body>
+<script>
+  const ctx = document.getElementById('canvas')
+  const gl = ctx.getContext('webgl')
+
+  // 创建着色器源码
+  const VERTEX_SHADER_SOURCE = `
+    // 只传递顶点数据
+    attribute vec4 aPosition;
+    void main(){
+      gl_Position = aPosition; // vec4(0.0,0.0,0.0,1.0);
+      gl_PointSize = 30.0;
+    }
+  `; // 顶点着色器
+
+  const FRAGMENT_SHADER_SOURCE = `
+    void main(){
+      gl_FragColor = vec4(0.0,1.0,1.0,1.0);
+    }
+  `; // 片元着色器
+
+  const program = initShader(gl, VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE)
+
+  const aPosition = gl.getAttribLocation(program, 'aPosition');
+
+  // onclick onmousemove  鼠标移动的效果
+  const points = []
+  ctx.onmousemove = function (ev) {
+    // 第一步先进行坐标转换,转换到 绘制坐标系（-1,1）中
+    // 坐标
+    const x = ev.clientX
+    const y = ev.clientY
+
+    const domPosition = ev.target.getBoundingClientRect();
+    console.log(domPosition, ctx.offsetTop, ctx.offsetLeft)
+
+    const domx = x - domPosition.left;
+    const domy = y - domPosition.top;
+
+    /*
+      0 200 400
+      -1 0 1
+      -200 0 200
+      -1 0 1
+      需要先 -200 （当前画布的宽度） 然后再 除以 200
+      1 0 -1
+      0 200 400
+      200 0 -200 /200
+      需要先让200减这个数，然后再/200
+    */
+
+    const halfWidth = ctx.offsetWidth / 2
+    const halfHeight = ctx.offsetHeight / 2
+
+    const clickX = (domx - halfWidth) / halfWidth
+    const clickY = (halfHeight - domy) / halfHeight
+
+    // gl.vertexAttrib2f(aPosition, clickX, clickY)
+    // gl.drawArrays(gl.POINTS, 0, 1);
+    points.push({
+      clickX, clickY
+    })
+    // console.log(clickX,clickY)
+    for (let i = 0; i < points.length; i++) {
+      gl.vertexAttrib2f(aPosition, points[i].clickX, points[i].clickY)
+      gl.drawArrays(gl.POINTS, 0, 1);
+    }
+  }
+
+
+</script>
+
+</html>
